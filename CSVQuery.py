@@ -36,9 +36,6 @@ class CSVQuery(object):
     self.columns = []
     self.conditions = []
 
-  def file_fieldnames(self):
-    return "... fieldnames from the file selected"
-
   def __make_columns(self, columns=[]):
     columns_out = []
     for column in columns.split(","):
@@ -50,6 +47,24 @@ class CSVQuery(object):
     s = s.strip()
     return s
 
+  def __equals(self, val1, val2):
+    return val1 == val2
+
+  def __gt(self, val1, val2):
+    return val1 > val2
+
+  def __gte(self, val1, val2):
+    return val1 >= val2
+
+  def __lt(self, val1, val2):
+    return val1 < val2
+
+  def __lte(self, val1, val2):
+    return val1 <= val2
+
+  def __between(self, val0, val1, val2):
+    return (val1 < val0) and (val0 < val2)
+
   def __make_conditions(self, conditions=""):
     # find all in parens
     pattern = "\(([^\)]+)\)"
@@ -57,8 +72,18 @@ class CSVQuery(object):
     operators = re.sub(pattern, "", conditions)
     print expressions, operators.split()
 
+    """
+      cond = [
+        Condition,
+        [
+          Condition,
+          Condition
+        ],
+        Condition
+      ]
+    """
+
     patterns = Patterns()
-    # between
     pattern = re.compile(patterns.between_pattern(), re.IGNORECASE)
     groups = pattern.findall(conditions)
     for group in groups:
@@ -84,26 +109,53 @@ class CSVQuery(object):
 
         print self.conditions[1].callback(["New York"])
 
-  def select(self, columns=""):
+  def SELECT(self, columns=""):
     self.columns = self.__make_columns(columns)
     # if self.columns and self.conditions:
     #   return self.run()
     return self
 
-  def where(self, conditions=""):
+  def FROM(self, filename="", directory=""):
+    print filename, directory
+
+  def WHERE(self, conditions=""):
     self.conditions = self.__make_conditions(conditions)
     # if self.columns and self.conditions:
     #   return self.__run()
-    # return self
+    return self
 
-  def __equals(self, val1, val2):
-    return val1 == val2
+  def BETWEEN(self, column, val1, val2):
+    print column, val1, val2
+    return self
 
-  def __gt(self, val1, val2):
-    return val1 > val2
+  def LIKE(self, column, val):
+    print column, val
 
-  def __between(self, val0, val1, val2):
-    return (val1 < val0) and (val0 < val2)
+  def AND(self, condition):
+    print condition
+    return self
+
+  def OR(self, condition):
+    print condition
+    return self
+
+  def ORDER_BY(self, columns):
+    print columns
+    return self
+
+  def DESC(self):
+    print "desc"
+
+  def ASC(self):
+    print "asc"
+
+  def SUM(self, column):
+    print column
+    return self
+
+  def AVG(self, column):
+    print column
+    return self
 
   def __run(self):
     result = {}
