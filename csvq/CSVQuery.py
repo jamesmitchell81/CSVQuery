@@ -1,4 +1,4 @@
-import csv, os, re
+import csv, os, re, json
 from patterns import Patterns
 
 class Condition(object):
@@ -28,22 +28,38 @@ class CSVQuery(object):
     s = s.strip()
     return s
 
+  def __float(self, val):
+    try:
+      return float(val)
+    except ValueError:
+      return 0.0
+
   def __str_equals(self, val1, val2):
+    val1 = self.__clean(val1)
+    val2 = self.__clean(val2)
     return val1 == val2
 
   def __equals(self, val1, val2):
+    val1 = self.__float(val1)
+    val2 = self.__float(val2)
     return val1 == val2
 
   def __gt(self, val1, val2):
+    val1 = self.__float(val1)
+    val2 = self.__float(val2)
     return val1 > val2
 
   def __gte(self, val1, val2):
     return val1 >= val2
 
   def __lt(self, val1, val2):
+    val1 = self.__float(val1)
+    val2 = self.__float(val2)
     return val1 < val2
 
   def __lte(self, val1, val2):
+    val1 = self.__float(val1)
+    val2 = self.__float(val2)
     return val1 <= val2
 
   def __between(self, val0, val1, val2):
@@ -51,12 +67,12 @@ class CSVQuery(object):
 
   def __make_conditions(self, expression=""):
     cond_patterns = {
-      "^([a-zA-z]+)\s{1}(=){1}\s{1}'{1}([a-zA-Z]+)'{1}$":  self.__str_equals, 
-      "^([a-zA-z]+)\s{1}(=){1}\s{1}([0-9]+(?:\.[0-9]+)?)+$": self.__equals,
-      "^([a-zA-z]+)\s{1}(>){1}\s{1}([0-9]+(?:\.[0-9]+)?)+$":  self.__gt,
-      "^([a-zA-z]+)\s{1}(<){1}\s{1}([0-9]+(?:\.[0-9]+)?)+$":  self.__lt,
-      "^([a-zA-z]+)\s{1}(>=)\s{1}([0-9]+(?:\.[0-9]+)?)+$": self.__gte,
-      "^([a-zA-z]+)\s{1}(<=)\s{1}([0-9]+(?:\.[0-9]+)?)+$": self.__lte
+      "^([a-zA-z]+)\s{1}(=){1}\s{1}'{1}([a-zA-Z\s]+)'{1}$":  self.__str_equals, 
+      "^([a-zA-z]+)\s{1}(=){1}\s{1}([-0-9]+(?:\.[0-9]+)?)+$": self.__equals,
+      "^([a-zA-z]+)\s{1}(>){1}\s{1}([-0-9]+(?:\.[0-9]+)?)+$":  self.__gt,
+      "^([a-zA-z]+)\s{1}(<){1}\s{1}([-0-9]+(?:\.[0-9]+)?)+$":  self.__lt,
+      "^([a-zA-z]+)\s{1}(>=)\s{1}([-0-9]+(?:\.[0-9]+)?)+$": self.__gte,
+      "^([a-zA-z]+)\s{1}(<=)\s{1}([-0-9]+(?:\.[0-9]+)?)+$": self.__lte
     }
 
     for pattern, callback in cond_patterns.iteritems():
@@ -65,7 +81,7 @@ class CSVQuery(object):
         condition = Condition(
             callback=callback,
             column=search.group(1),
-            args=[search.group(2)]
+            args=[search.group(3)]
           )
         self._conditions.append(condition)
 
@@ -77,7 +93,7 @@ class CSVQuery(object):
     print filename, directory
 
   def WHERE(self, conditions=""):
-    self.conditions = self.__make_conditions(conditions)
+    self.__make_conditions(conditions)
     return self
 
   def BETWEEN(self, column, val1, val2):
@@ -87,6 +103,7 @@ class CSVQuery(object):
     return self
 
   def AND(self, condition):
+    self.__make_conditions(condition)
     return self
 
   def OR(self, condition):
@@ -109,7 +126,7 @@ class CSVQuery(object):
     pass
 
   def get(self):
-    result = {}
+    results = []
     if self.directory:
       query_file = self.directory + "/" + self.filename
     
@@ -117,15 +134,14 @@ class CSVQuery(object):
       reader = csv.DictReader(infile)
       for row in reader:
         for condition in self._conditions:
-          column = condition.column
+          if condition.column in row.keys():
+            if condition.callback([row[condition.column]]):
+              result = {}
+              for column in self._columns:
+                result[column] = row[column]
+              results.append(result)
 
-          if column in row.keys():
-            print type(row[column])
-            passes = condition.callback([row[column]])
-            if passes:
-              print passes
-
-    return result
+    return results
 
 
 

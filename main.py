@@ -17,12 +17,12 @@ def main():
   # query.SUM("pop").WHERE("this = 'that'")
   # query.AVG("pop").WHERE("this = 'that'")
 
-  query.SELECT("name, pop").WHERE("pop > 1000000")
+  query.SELECT("name, lon, lat").WHERE("pop > 1000000").AND('lat > -95.0')
 
   result = query.get()
   
   print query._columns
-  print query._conditions
+  print result
 
 if __name__ == "__main__":
   main()
